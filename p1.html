@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrestigeAuto | 頂級二手車交易平台</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* --- 基礎設定 --- */
+        :root {
+            --primary: #0f172a; --accent: #f97316; --text-main: #1e293b;
+            --text-light: #64748b; --bg-light: #f1f5f9; --white: #ffffff;
+            --success: #10b981;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-light); color: var(--text-main); line-height: 1.6; }
+
+        /* 導覽列 */
+        nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; padding: 1rem 5%; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); cursor: pointer; }
+        .logo span { color: var(--accent); }
+        .nav-links a { text-decoration: none; color: var(--text-main); margin-left: 1.5rem; font-weight: 500; transition: 0.2s; cursor: pointer; position: relative;}
+        .nav-links a:hover { color: var(--accent); }
+        .nav-links a.active-link { color: var(--accent); }
+        .nav-links a.active-link::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 2px; background: var(--accent); }
+
+        /* 頁面切換 */
+        .page-section { display: none; animation: fadeIn 0.4s ease-in-out; padding-bottom: 3rem; }
+        .page-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 共用元件 */
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
+        .btn-primary { background: var(--accent); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-outline { border: 2px solid var(--primary); background: transparent; color: var(--primary); padding: 0.5rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-outline:hover { background: var(--primary); color: white; }
+
+        /* Toolbar */
+        .list-header { margin-bottom: 1.5rem; }
+        .list-title { font-size: 1.8rem; color: var(--primary); margin-bottom: 1rem; }
+        .toolbar { background: white; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 1rem; }
+        .search-wrapper { flex: 1; display: flex; align-items: center; background: #f1f5f9; padding: 0.6rem 1rem; border-radius: 8px; }
+        .search-wrapper i { color: var(--text-light); margin-right: 0.8rem; }
+        .search-wrapper input { border: none; background: transparent; width: 100%; outline: none; font-size: 1rem; color: var(--text-main); }
+        .result-count { font-size: 0.9rem; color: var(--text-light); white-space: nowrap; }
+
+        /* 列表與側邊欄 */
+        .list-layout { display: grid; grid-template-columns: 250px 1fr; gap: 2rem; }
+        .sidebar { background: white; padding: 1.5rem; border-radius: 16px; height: fit-content; box-shadow: var(--shadow); }
+        .filter-group { margin-bottom: 2rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem; }
+        .filter-group:last-child { border-bottom: none; }
+        .filter-title { font-weight: bold; margin-bottom: 0.8rem; display: block; color: var(--primary); }
+        .filter-item { display: flex; align-items: center; margin-bottom: 0.6rem; color: var(--text-light); cursor: pointer; transition: 0.2s; }
+        .filter-item:hover { color: var(--accent); }
+        .filter-item input { margin-right: 0.6rem; accent-color: var(--accent); transform: scale(1.1); }
+
+        /* 卡片 */
+        .card { background: var(--white); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); transition: var(--transition); cursor: pointer; display: flex; flex-direction: column;}
+        .card:hover { transform: translateY(-8px); }
+        .card-img-wrapper { height: 200px; overflow: hidden; position: relative; }
+        .card-tag { position: absolute; top: 10px; left: 10px; background: var(--primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+        .card-img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .card-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+        .price-area { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 1rem; border-top: 1px solid #eee; }
+        .bid-amount { font-size: 1.25rem; font-weight: 800; color: var(--primary); }
+
+        /* 賣車頁面 */
+        .sell-container { max-width: 800px; margin: 3rem auto; background: white; padding: 3rem; border-radius: 20px; box-shadow: var(--shadow); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--primary); }
+        .form-input { width: 100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
+        .upload-area { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: 0.2s; background: #f8fafc; grid-column: 1 / -1; position: relative; }
+        .upload-area:hover { border-color: var(--accent); background: #fff7ed; }
+        .file-input-hidden { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .preview-grid { grid-column: 1 / -1; display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+        .preview-img { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        /* Hero */
+        .hero { background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80'); background-size: cover; background-position: center; height: 400px; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--white); }
+        .hero-search { background: var(--white); padding: 0.5rem; border-radius: 50px; display: flex; width: 100%; max-width: 600px; margin: 2rem auto 0; }
+        .hero-search input { border: none; flex: 1; padding: 1rem 1.5rem; border-radius: 50px; outline: none; font-size: 1rem; }
+        .hero-search-btn { background: var(--primary); color: var(--white); border: none; padding: 0 2rem; border-radius: 50px; cursor: pointer; font-weight: bold; }
+
+        /* 詳細頁 & 出價紀錄 */
+        .detail-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 2rem; }
+        .gallery-main { width: 100%; height: 450px; border-radius: 16px; object-fit: cover; box-shadow: var(--shadow); }
+        .bid-panel { background: white; padding: 2rem; border-radius: 16px; box-shadow: var(--shadow); position: sticky; top: 100px; }
+        
+        .history-list { margin-top: 1.5rem; max-height: 200px; overflow-y: auto; background: #f8fafc; border-radius: 8px; padding: 1rem; border: 1px solid #e2e8f0; }
+        .history-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: var(--text-light); }
+        /* 使用者自己的出價樣式 */
+        .history-item.is-me { color: var(--primary); font-weight: bold; background: rgba(249, 115, 22, 0.1); margin: 0 -1rem; padding: 0.5rem 1rem; border-bottom: none; }
+        .price-up { color: var(--success); font-weight: bold; }
+
+        @media (max-width: 768px) {
+            .list-layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .detail-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo" onclick="switchPage('home')">Prestige<span>Auto</span></div>
+        <div class="nav-links">
+            <a onclick="switchPage('home')" id="nav-home" class="active-link">首頁</a>
+            <a onclick="switchPage('auction')" id="nav-auction">競標拍賣</a>
+            <a onclick="switchPage('buy-now')" id="nav-buy-now">固定價格車輛</a>
+            <a onclick="switchPage('sell')" id="nav-sell">我要賣車</a>
+            <a onclick="alert('登入功能')"><i class="far fa-user"></i> 登入</a>
+        </div>
+    </nav>
+
+    <div id="page-home" class="page-section active">
+        <header class="hero">
+            <div style="width: 100%;">
+                <h1>尋找您的下一部夢幻座駕</h1>
+                <p>競標、直購，全台最頂級的二手車交易平台</p>
+                <div class="hero-search">
+                    <input type="text" id="home-search-input" placeholder="輸入品牌或型號 (例如: BMW)">
+                    <button class="hero-search-btn" onclick="executeHomeSearch()">搜尋</button>
+                </div>
+            </div>
+        </header>
+        <div class="container">
+            <h2 style="margin-bottom: 1.5rem; color: var(--primary);">🔥 本週熱門交易</h2>
+            <div class="grid" id="home-featured-grid"></div>
+        </div>
+    </div>
+
+    <div id="page-auction" class="page-section">
+        <div class="container">
+            <h2 class="list-title">競標拍賣車輛</h2>
+            <div class="toolbar list-header">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="auction-search-input" placeholder="搜尋拍賣車款..." oninput="applyFilters('auction')">
+                </div>
+                <div class="result-count" id="auction-count">顯示 0 筆</div>
+            </div>
+            <div class="list-layout">
+                <aside class="sidebar">
+                    <div class="filter-group">
+                        <label class="filter-title">品牌篩選</label>
+                        <label class="filter-item"><input type="checkbox" class="brand-filter" value="BMW" onchange="applyFilters('auction')"> BMW</label>
+                        <label class="filter-item"><input type="checkbox" class="brand-filter" value="Mercedes" onchange="applyFilters('auction')"> Mercedes-Benz</label>
+                        <label class="filter-item"><input type="checkbox" class="brand-filter" value="Porsche" onchange="applyFilters('auction')"> Porsche</label>
+                        <label class="filter-item"><input type="checkbox" class="brand-filter" value="Tesla" onchange="applyFilters('auction')"> Tesla</label>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-title">價格區間</label>
+                        <label class="filter-item"><input type="radio" name="auction-price" value="all" checked onchange="applyFilters('auction')"> 全部顯示</label>
+                        <label class="filter-item"><input type="radio" name="auction-price" value="low" onchange="applyFilters('auction')"> 100萬以下</label>
+                        <label class="filter-item"><input type="radio" name="auction-price" value="mid" onchange="applyFilters('auction')"> 100 - 200萬</label>
+                        <label class="filter-item"><input type="radio" name="auction-price" value="high" onchange="applyFilters('auction')"> 200萬以上</label>
+                    </div>
+                </aside>
+                <div class="grid" id="auction-grid"></div>
+                <div id="auction-no-result" style="display:none; text-align:center; grid-column: 2; padding: 2rem;">
+                    <i class="fas fa-search" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+                    <p style="color: var(--text-light);">找不到符合條件的車輛</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-buy-now" class="page-section">
+        <div class="container">
+            <h2 class="list-title">固定價格車輛</h2>
+            <div class="toolbar list-header">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="buy-now-search-input" placeholder="搜尋直購車款..." oninput="applyFilters('fixed')">
+                </div>
+                <div class="result-count" id="fixed-count">顯示 0 筆</div>
+            </div>
+            <div class="list-layout">
+                <aside class="sidebar">
+                    <div class="filter-group">
+                        <label class="filter-title">品牌篩選</label>
+                        <label class="filter-item"><input type="checkbox" class="brand-filter-fixed" value="BMW" onchange="applyFilters('fixed')"> BMW</label>
+                        <label class="filter-item"><input type="checkbox" class="brand-filter-fixed" value="Mercedes" onchange="applyFilters('fixed')"> Mercedes-Benz</label>
+                        <label class="filter-item"><input type="checkbox" class="brand-filter-fixed" value="Audi" onchange="applyFilters('fixed')"> Audi</label>
+                        <label class="filter-item"><input type="checkbox" class="brand-filter-fixed" value="Lexus" onchange="applyFilters('fixed')"> Lexus</label>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-title">價格區間</label>
+                        <label class="filter-item"><input type="radio" name="fixed-price" value="all" checked onchange="applyFilters('fixed')"> 全部顯示</label>
+                        <label class="filter-item"><input type="radio" name="fixed-price" value="low" onchange="applyFilters('fixed')"> 100萬以下</label>
+                        <label class="filter-item"><input type="radio" name="fixed-price" value="mid" onchange="applyFilters('fixed')"> 100 - 200萬</label>
+                        <label class="filter-item"><input type="radio" name="fixed-price" value="high" onchange="applyFilters('fixed')"> 200萬以上</label>
+                    </div>
+                </aside>
+                <div class="grid" id="buy-now-grid"></div>
+                <div id="fixed-no-result" style="display:none; text-align:center; grid-column: 2; padding: 2rem;">
+                    <i class="fas fa-search" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+                    <p style="color: var(--text-light);">找不到符合條件的車輛</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-sell" class="page-section">
+        <div class="container">
+            <div class="sell-container">
+                <h2 style="text-align: center;">申請上架您的愛車</h2>
+                <form onsubmit="event.preventDefault(); alert('申請已送出！'); switchPage('home');">
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: 1 / -1;"><label>上架方式選擇</label><select class="form-input"><option>A. 競標拍賣</option><option>B. 固定價格</option></select></div>
+                        <div class="form-group"><label>車輛品牌與型號</label><input type="text" class="form-input" placeholder="例如：Mazda 3"></div>
+                        <div class="form-group"><label>預期價格</label><input type="number" class="form-input" placeholder="輸入金額"></div>
+                        <div class="upload-area">
+                            <input type="file" class="file-input-hidden" multiple accept="image/*" onchange="previewImages(event)">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+                            <h4>點擊或拖曳照片至此</h4>
+                        </div>
+                        <div class="preview-grid" id="image-preview-container"></div>
+                    </div>
+                    <div style="margin-top: 2rem;"><button type="submit" class="btn-primary" style="width: 100%;">提交申請</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-detail" class="page-section">
+        <div class="container">
+            <div class="back-btn" onclick="switchPage(lastViewedPage)" style="cursor: pointer; margin-bottom: 1rem;">
+                <i class="fas fa-arrow-left"></i> 回到列表
+            </div>
+            <div class="detail-layout">
+                <div class="left-col">
+                    <img id="detail-img" src="" class="gallery-main">
+                    <h2 style="margin-top: 2rem;">車輛規格</h2>
+                    <p style="color: var(--text-light);">車輛詳細檢測報告...</p>
+                </div>
+                <div class="right-col">
+                    <div class="bid-panel">
+                        <h1 id="detail-title">Car Name</h1>
+                        <h2 id="detail-price" style="font-size: 2.5rem; color: var(--primary); margin-top: 1rem;">$0</h2>
+                        
+                        <div id="bid-history-container" style="display:none;">
+                            <p style="margin-top: 1.5rem; font-weight: bold; color: var(--text-light); font-size: 0.9rem;">最近出價紀錄</p>
+                            <div class="history-list" id="history-list-el"></div>
+                        </div>
+
+                        <button id="detail-action-btn" class="btn-primary" style="width: 100%; margin-top: 1rem;" onclick="performAction()">立即行動</button>
+                        <p id="detail-bid-info" style="text-align: center; margin-top: 1rem; font-size: 0.9rem;"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 資料庫：現在每台車都多了一個 'history' 欄位，初始為空陣列
+        const carDatabase = [
+            { id: 1, brand: "BMW", title: "2021 BMW 330i M Sport", price: 1580000, img: "https://images.unsplash.com/photo-1555215695-3004980adade?auto=format&fit=crop&w=800&q=80", status: "auction", history: [] },
+            { id: 2, brand: "Porsche", title: "2019 Porsche 911 Carrera", price: 3250000, img: "https://images.unsplash.com/photo-1503376763036-066120622c74?auto=format&fit=crop&w=800&q=80", status: "auction", history: [] },
+            { id: 3, brand: "Tesla", title: "2022 Tesla Model 3 Perf.", price: 1350000, img: "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80", status: "auction", history: [] },
+            { id: 4, brand: "Mercedes", title: "2020 Mercedes C300", price: 1450000, img: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80", status: "fixed", history: [] },
+            { id: 5, brand: "Audi", title: "2018 Audi A4 S-Line", price: 980000, img: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=800&q=80", status: "fixed", history: [] },
+            { id: 6, brand: "Lexus", title: "2023 Lexus NX200", price: 1680000, img: "https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=800&q=80", status: "fixed", history: [] },
+            { id: 7, brand: "BMW", title: "2015 BMW M4 Coupe", price: 2100000, img: "https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&w=800&q=80", status: "auction", history: [] },
+            { id: 8, brand: "Mercedes", title: "2022 Benz G-Class", price: 6500000, img: "https://images.unsplash.com/photo-1520031441872-265e4e9d96b5?auto=format&fit=crop&w=800&q=80", status: "fixed", history: [] }
+        ];
+
+        let lastViewedPage = 'home';
+        let currentDetailCar = null;
+
+        // --- 初始化：產生初始的假歷史紀錄 (只執行一次) ---
+        window.onload = function() {
+            // 幫所有拍賣車產生初始假資料，並存入 car.history
+            carDatabase.forEach(car => {
+                if(car.status === 'auction' && car.history.length === 0) {
+                    const users = ['Alex_99', 'CarLover', 'Toyota_Fan'];
+                    // 產生 3 筆比初始價格低的紀錄
+                    for (let i = 1; i <= 3; i++) {
+                        let pastPrice = car.price - (i * 10000 + Math.floor(Math.random()*5000));
+                        car.history.push({
+                            user: users[i-1],
+                            price: pastPrice,
+                            isMe: false
+                        });
+                    }
+                }
+            });
+
+            applyFilters('auction');
+            applyFilters('fixed');
+            renderFeatured();
+        }
+
+        // --- 核心邏輯：出價與儲存 ---
+        function performAction() {
+            if (!currentDetailCar) return;
+
+            if (currentDetailCar.status === 'auction') {
+                // 1. 價格增加
+                currentDetailCar.price += 10000;
+                
+                // 2. 新增一筆紀錄到該車的 history 陣列最前面 (unshift)
+                // 這裡加入了 isMe: true 標記，代表這是你出的
+                currentDetailCar.history.unshift({
+                    user: '您 (You)',
+                    price: currentDetailCar.price,
+                    isMe: true
+                });
+
+                // 3. 更新畫面
+                updateDetailView();
+                alert(`出價成功！\n目前價格已更新為 $${currentDetailCar.price.toLocaleString()}`);
+            } else {
+                alert(`正在為您轉接 ${currentDetailCar.title} 的銷售顧問。`);
+            }
+        }
+
+        // 更新詳細頁面的數據 (價格 + 歷史紀錄)
+        function updateDetailView() {
+            document.getElementById('detail-price').innerText = `現價 $${currentDetailCar.price.toLocaleString()}`;
+            
+            const listEl = document.getElementById('history-list-el');
+            listEl.innerHTML = ''; // 清空列表
+
+            // 從 car.history 讀取資料來渲染
+            currentDetailCar.history.forEach(record => {
+                const item = document.createElement('div');
+                // 如果是自己出的，加上特別樣式 class="is-me"
+                item.className = record.isMe ? 'history-item is-me' : 'history-item';
+                
+                const userHtml = record.isMe ? `<span><i class="fas fa-user-circle"></i> ${record.user}</span>` : `<span>${record.user}</span>`;
+                
+                item.innerHTML = `
+                    ${userHtml}
+                    <span class="${record.isMe ? 'price-up' : ''}">$${record.price.toLocaleString()}</span>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        // --- 其他渲染邏輯 (保持不變) ---
+        function openDetail(carId) {
+            currentDetailCar = carDatabase.find(c => c.id === carId);
+            if (!currentDetailCar) return;
+
+            document.getElementById('detail-title').innerText = currentDetailCar.title;
+            document.getElementById('detail-img').src = currentDetailCar.img;
+            
+            const actionBtn = document.getElementById('detail-action-btn');
+            const bidInfo = document.getElementById('detail-bid-info');
+            const historyContainer = document.getElementById('bid-history-container');
+
+            if (currentDetailCar.status === 'auction') {
+                actionBtn.innerText = '立即出價 (+1萬)';
+                bidInfo.innerText = `競標將於 23:59 結束`;
+                historyContainer.style.display = 'block';
+                
+                // 打開時，呼叫 updateDetailView 來顯示目前儲存的紀錄
+                updateDetailView();
+            } else {
+                // 固定價格
+                document.getElementById('detail-price').innerText = `售價 $${currentDetailCar.price.toLocaleString()}`;
+                actionBtn.innerText = '聯絡賣家 / 立即購買';
+                bidInfo.innerText = `價格固定，隨時可成交`;
+                historyContainer.style.display = 'none';
+            }
+            switchPage('detail');
+        }
+
+        // ... (以下為原本的搜尋、篩選、圖片預覽功能，皆保持不變) ...
+        function createCardHTML(car) {
+            const tagText = car.status === 'auction' ? '競標中' : '立即購買';
+            const buttonText = car.status === 'auction' ? '出價' : '詳情/購買';
+            return `
+                <article class="card" onclick="openDetail(${car.id})">
+                    <div class="card-img-wrapper">
+                        <img src="${car.img}" class="card-img">
+                        <span class="card-tag">${tagText}</span>
+                    </div>
+                    <div class="card-body">
+                        <h3>${car.title}</h3>
+                        <div class="price-area">
+                            <span class="bid-amount">${car.status === 'auction' ? '現價' : '售價'} $${car.price.toLocaleString()}</span>
+                            <button class="btn-outline">${buttonText}</button>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderFeatured() {
+            const grid = document.getElementById('home-featured-grid');
+            const featuredCars = carDatabase.slice(0, 3);
+            grid.innerHTML = featuredCars.map(createCardHTML).join('');
+        }
+
+        function applyFilters(type) {
+            const isAuction = type === 'auction';
+            const gridId = isAuction ? 'auction-grid' : 'buy-now-grid';
+            const searchInputId = isAuction ? 'auction-search-input' : 'buy-now-search-input';
+            const filterClass = isAuction ? '.brand-filter' : '.brand-filter-fixed';
+            const priceName = isAuction ? 'auction-price' : 'fixed-price';
+            const countId = isAuction ? 'auction-count' : 'fixed-count';
+            const noResultId = isAuction ? 'auction-no-result' : 'fixed-no-result';
+            
+            const searchText = document.getElementById(searchInputId).value.toLowerCase();
+            const checkedBrands = Array.from(document.querySelectorAll(filterClass + ':checked')).map(el => el.value);
+            const priceValue = document.querySelector(`input[name="${priceName}"]:checked`).value;
+
+            const filteredData = carDatabase.filter(car => {
+                const matchType = car.status === type;
+                const matchSearch = car.title.toLowerCase().includes(searchText);
+                const matchBrand = checkedBrands.length === 0 || checkedBrands.includes(car.brand);
+                let matchPrice = true;
+                if (priceValue === 'low') matchPrice = car.price < 1000000;
+                else if (priceValue === 'mid') matchPrice = car.price >= 1000000 && car.price <= 2000000;
+                else if (priceValue === 'high') matchPrice = car.price > 2000000;
+                return matchType && matchSearch && matchBrand && matchPrice;
+            });
+
+            const grid = document.getElementById(gridId);
+            const noResult = document.getElementById(noResultId);
+            const countLabel = document.getElementById(countId);
+            grid.innerHTML = filteredData.map(createCardHTML).join('');
+            noResult.style.display = filteredData.length === 0 ? "block" : "none";
+            countLabel.innerText = `顯示 ${filteredData.length} 筆`;
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active-link'));
+            const navLink = document.getElementById('nav-' + pageId);
+            if(navLink) navLink.classList.add('active-link');
+            
+            if (pageId === 'auction') applyFilters('auction');
+            if (pageId === 'buy-now') applyFilters('fixed');
+            if (pageId === 'home') renderFeatured();
+
+            if (pageId === 'auction' || pageId === 'buy-now') lastViewedPage = pageId;
+            window.scrollTo(0, 0);
+        }
+
+        function executeHomeSearch() {
+            const keyword = document.getElementById('home-search-input').value;
+            switchPage('auction'); 
+            document.getElementById('auction-search-input').value = keyword;
+            applyFilters('auction');
+        }
+
+        function previewImages(event) {
+            const previewContainer = document.getElementById('image-preview-container');
+            previewContainer.innerHTML = "";
+            const files = event.target.files;
+            if (files) {
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'preview-img';
+                        previewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
